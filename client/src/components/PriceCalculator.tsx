@@ -13,18 +13,57 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles } from "lucide-react";
 import { usePriceConfig } from "@/hooks/usePriceConfig";
 import { calculateCustomPrice } from "@/lib/priceCalculator";
+import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
+import Confetti from 'react-confetti';
 
-export default function PriceCalculator() {
+interface PriceCalculatorProps {
+  productId?: string;
+  onAddToCart?: () => void;
+}
+
+export default function PriceCalculator({ productId, onAddToCart }: PriceCalculatorProps) {
   const [carat, setCarat] = useState(1.0);
   const [metal, setMetal] = useState<"white-gold" | "yellow-gold" | "rose-gold" | "platinum">("white-gold");
   const [engraving, setEngraving] = useState(false);
   const [giftBox, setGiftBox] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   // Fetch price config from API
   const { data: priceConfig, isLoading } = usePriceConfig();
+  const { addToCart } = useCart();
+  const { toast } = useToast();
 
   const calculateTotal = () => {
     return calculateCustomPrice(priceConfig, carat, metal, engraving, giftBox);
+  };
+
+  const handleAddToCart = () => {
+    if (!productId) {
+      toast({
+        title: "Error",
+        description: "Product ID is missing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const customPrice = calculateTotal();
+    
+    // Convert metal format from "white-gold" to "White Gold"
+    const metalFormatted = metal.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ') as 'White Gold' | 'Yellow Gold' | 'Rose Gold' | 'Platinum';
+
+    addToCart(productId, metalFormatted, customPrice);
+    
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 3000);
+
+    // Call the optional callback if provided
+    if (onAddToCart) {
+      onAddToCart();
+    }
   };
 
   // Fallback values for display when loading
@@ -32,11 +71,22 @@ export default function PriceCalculator() {
   const giftBoxFee = priceConfig?.customizationFees.giftBox || 2500;
 
   return (
-    <div className="bg-card border border-card-border rounded-lg p-6 space-y-6">
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-primary" />
-        <h3 className="font-serif text-xl font-bold">Customize Your Ring</h3>
-      </div>
+    <>
+      {showConfetti && typeof window !== 'undefined' && (
+        <div className="fixed inset-0 pointer-events-none z-50">
+          <Confetti
+            width={window.innerWidth}
+            height={window.innerHeight}
+            recycle={false}
+            numberOfPieces={200}
+          />
+        </div>
+      )}
+      <div className="bg-card border border-card-border rounded-lg p-6 space-y-6">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <h3 className="font-serif text-xl font-bold">Customize Your Ring</h3>
+        </div>
 
       <div className="space-y-4">
         <div>
@@ -111,12 +161,19 @@ export default function PriceCalculator() {
                 ₹{calculateTotal().toLocaleString('en-IN')}
               </span>
             </div>
-            <Button className="w-full" size="lg" data-testid="button-add-to-cart">
+            <Button 
+              className="w-full" 
+              size="lg" 
+              data-testid="button-add-to-cart"
+              onClick={handleAddToCart}
+              disabled={!productId}
+            >
               Add to Cart
             </Button>
           </>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

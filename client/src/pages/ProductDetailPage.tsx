@@ -285,10 +285,13 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        <div className="mt-16">
-          <h2 className="font-serif text-3xl font-bold mb-8">Customize This Ring</h2>
-          <div className="max-w-2xl">
-            <PriceCalculator />
+        <div className="mt-16 flex flex-col items-center">
+          <h2 className="font-serif text-3xl font-bold mb-8 text-center">Customize This Ring</h2>
+          <div className="max-w-2xl w-full">
+            <PriceCalculator 
+              productId={productId}
+              onAddToCart={handleAddToCartClick}
+            />
           </div>
         </div>
       </div>

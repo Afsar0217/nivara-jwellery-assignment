@@ -1,0 +1,124 @@
+### Ultra-Detailed Enhanced Prompt — Generate a Deployable Production-Ready Premium Jewelry E-Commerce Prototype ("Nivara Luxe")
+
+**Executive Summary & Goal**: Engineer a fully deployable, enterprise-grade demo for "Nivara Luxe" — an ethical lab-grown diamond jewelry e-commerce platform emphasizing sustainability, personalization, and immersive luxury. This prototype must simulate a production environment with mocked backend (API routes in Next.js), robust frontend interactions, and end-to-end workflows. Prioritize:
+- **UX Polish**: Silky-smooth 60fps animations (throttled via requestAnimationFrame), haptic feedback on mobile (via Vibration API where supported), and gesture support (pinch-zoom on images).
+- **Performance**: Target <1.8s Time to First Paint (TTFP) on 3G emulation, <2.2s Largest Contentful Paint (LCP), <0.05 Cumulative Layout Shift (CLS), and <100ms First Input Delay (FID). Use Web Vitals API for runtime monitoring with console logging.
+- **Accessibility**: Full WCAG 2.1 AA/AAA compliance where feasible (e.g., 4.5:1 contrast ratios, live regions for dynamic updates like price changes). Include screen reader testing scripts (e.g., VoiceOver/NVDA simulations in E2E).
+- **Maintainability & Scalability**: 100% TypeScript with strict mode (`noImplicitAny: true`, `strictNullChecks: true`), modular monorepo structure (e.g., /lib for utils, /components/ui for shadcn-like primitives), and design system tokens (e.g., /design-system/tokens.json for colors/spacing).
+- **Security Baseline**: OWASP Top 10 mitigations (e.g., input sanitization with Zod, JWT-like session mocks, helmet.js for headers).
+- **Output Deliverables**: A complete, zipped codebase (or GitHub repo template) with all assets; a live Vercel/Netlify preview link (auto-deploy via CI); and a `demo-report.md` summarizing Lighthouse scores (performance 95+, accessibility 100%), test coverage (90%+), and bundle analysis (via webpack-bundle-analyzer).
+
+**Mandatory Tech Stack & Configurations**:
+- **Framework**: Next.js 14+ (app router mandatory for all pages/routes; leverage Turbopack for dev speed; SSG for static pages like About, SSR for dynamic like Collection, ISR for product data with 1h revalidation).
+- **Language**: TypeScript 5.2+ everywhere; include `tsconfig.json` with paths aliases (e.g., `@/*` for src).
+- **Styling**: Tailwind CSS 3.4+ (JIT mode, content scanning for full class purge); extend with CSS variables in `globals.css` for theme tokens (e.g., `--gold-primary: #D4AF37; --neutral-bg: #FAFAFA;`). Fonts: Google Fonts preload for Playfair Display (headings, 400/700 weights) and Inter (body, variable weights 100-900). Add `tailwind.config.js` with custom plugins for jewelry-specific utilities (e.g., `.sparkle { filter: drop-shadow(0 0 4px rgba(255,215,0,0.5)); }`).
+- **Animations & Interactions**: Framer Motion 11+ for layout transitions (e.g., `AnimatePresence` for modals), GSAP 3.12+ for complex timelines (e.g., staggered product grid reveals). Include `framer-motion` and `gsap` in deps; register GSAP plugins like ScrollTrigger for parallax.
+- **3D/AR Immersion**: Three.js 0.160+ for lightweight 360° product spins (load glTF models from /public/models); integrate `<model-viewer>` (Google's Web Component) for AR try-on (QR code generation for mobile scanning, fallback to 2D overlay). Polyfill WebXR for broader compatibility.
+- **State Management & Data**: React Context + useReducer for global state (cart, wishlist, pricing config); TanStack Query (React Query v5) for optimistic mutations and caching (e.g., infinite queries for collections). Mock API layer: Next.js API routes (`/app/api/.../route.ts`) with in-memory "DB" (e.g., Map for products) and JSON file fallbacks.
+- **Image Optimization**: Next/Image with `priority` for LCP elements, `sizes` prop for responsive (e.g., `(max-width: 768px) 100vw, 50vw`); automatic WebP/AVIF conversion via `next.config.js` images.remotePatterns. Include Sharp for build-time optimization.
+- **Persistence & Offline**: localStorage + IndexedDB (via idb-keyval) for cart/wishlist sync; PWA setup with `next-pwa` plugin (manifest.json with icons at 192/512px, service worker for cache-first strategy on products/images).
+- **Dev Tools**: ESLint 9+ (with `@next/eslint-config-next`, `eslint-plugin-jsx-a11y`), Prettier 3+ (single quotes, semi: true), Husky + lint-staged for pre-commit hooks. Type checks via `tsc --noEmit`.
+- **Testing Suite**: Vitest 1+ for units (with Vite for speed, jsdom env); React Testing Library for component renders; Playwright 1.40+ for E2E (chromium/firefox/webkit, with trace viewer). Coverage via `vitest --coverage` (Istanbul, thresholds 90% statements/branches).
+- **Component Catalog**: Storybook 8+ (with `@storybook/nextjs`, addons for a11y/dark mode); stories for all reusable UI (e.g., Button, Modal, Swatch).
+- **CI/CD Pipeline**: GitHub Actions `.github/workflows/ci-cd.yml` with jobs: lint/test (parallel), build (with bundle analysis), deploy-to-vercel (on push to main). Include secrets for Vercel token.
+- **Analytics & Compliance**: Google Analytics 4 via `next-gtag`; cookie consent via `react-cookie-consent` (GDPR-compliant banner with opt-out). Privacy policy stub in /legal.
+- **Deployment Config**: `vercel.json` for rewrites/headers (e.g., `/api/*` to serverless functions); `next.config.js` with env validation via `zod`. Fallback: Netlify.toml for edge functions.
+
+**Core Pages & Feature Specifications** (All pages must have consistent layout: Sticky nav with search/hamburger, footer, loading skeletons via `next/dynamic` with suspense boundaries):
+
+- **Homepage** (`/`) – SSG for speed:
+  - **Hero Section**: Full-viewport parallax background (GSAP ScrollTrigger on seeded canvas particles simulating diamond facets via Three.js points; fallback to CSS gradients/keyframes). Headline: `<h1 class="text-6xl md:text-8xl font-playfair">Ethical Luxury Redefined</h1>` with typewriter effect (Framer variants). Subheadline on sustainability. Dual CTAs: "Explore Collections" (smooth scroll via `lenis` smooth-scroll lib) and "Build Your Ring" (modal to price calculator).
+  - **Featured Carousel**: Swiper.js 11+ integration (modules: Autoplay, Keyboard, Pagination); 6+ products from featured subset; cards with lazy images, hover tilt (Framer `whileHover`), and quick-add-to-cart.
+  - **Sustainability Module**: 3x grid (responsive stack); icons (Heroicons or Lucide: leaf for planet, heart for compassion, globe for purpose); animated counters (GSAP from 0 to value, e.g., "10,000+ Ethical Carats" with commas via Intl.NumberFormat). Microcopy links to cert PDFs (e.g., IGI lab-grown sample in /public/docs); include progress bars for "Carbon Neutral Goal: 95% Achieved".
+  - **Testimonials Slider**: Swiper with fade effect; 5+ entries (name, quote, 5-star rating via react-icons, avatar from /public/images); autoplay 4s, pause on hover, manual dots/arrows.
+  - **Newsletter Signup**: Form with email input (Zod validation: email regex), submit to `/api/newsletter` (mock: return {success: true, message: "Subscribed!"}; log to console). Use React Hook Form for state.
+  - **Footer**: Multi-column (sitemap: Home/Collections/About/Contact; socials: IG/Twitter icons linking to mocks; contact: address/phone/email; newsletter repeat; legal: Privacy/TOS with modals). Include back-to-top button (visible after 100vh scroll).
+
+- **Collection Page** (`/collections`) – ISR with revalidate 3600:
+  - **Layout**: Masonry grid via CSS Grid (gap: 2rem; `grid-template-columns: repeat(auto-fit, minmax(250px, 1fr))`); responsive breakpoints enforced in Tailwind.
+  - **Infinite Scroll**: TanStack Query `useInfiniteQuery` (fetch 8 items/page from `/api/products?page=&limit=8&filters=`); threshold 0.5, loading spinner (Framer spin), error retry with exponential backoff.
+  - **Faceted Filters Sidebar**: Sticky on desktop (offcanvas drawer on mobile via Headless UI Dialog); components: PriceSlider (react-slider with thumb labels, min ₹10,000 max ₹500,000, step ₹5,000), MultiSelect (metals: white/yellow/rose/platinum; shapes: round/oval/princess/emerald/pear; carat: <0.5/0.5-1/1-2/>2 via checkboxes). Sort dropdown (react-select: low-high/high-low/popularity/newest). Debounced search (useDebounce hook, Fuse.js for fuzzy on product names/descriptions). Live updates via Query invalidation; persist filters in URLSearchParams.
+  - **Accessibility Enhancements**: ARIA live region for "X results found", role="searchbox" on input, focus management (trap in drawer), skip links to main content.
+
+- **Product Details Page** (`/[slug]`) – SSR for personalization:
+  - **Gallery**: Hero image (Next/Image fill, object-fit: cover) with Three.js orbit controls for 360° spin (load texture from glTF, auto-rotate on idle); thumbnail rail (Swiper vertical); zoom modal (Fancybox or custom with react-zoom-pan-pinch) on click/dbl-tap.
+  - **Price Calculator (Core Mandatory Feature)**: Inline widget + full modal (Headless UI). UI: Sliders/inputs for carat (0.25-3.00, step 0.01, tooltip on change), metal dropdown, checkboxes for engraving/gem add-ons. Real-time preview with sparkle burst (react-confetti). Formula (in `/lib/priceCalculator.ts`): `Math.round((basePrice + (carat * caratMultiplier) + metalPremium + (customizationFees || 0)) / 10) * 10`; multipliers from Context (default: basePrice=₹50,000, caratMultiplier=₹20,000/ct, metalPremiums={white:0, yellow:5000, rose:3000, platinum:15000}). "Email Quote" POSTs to `/api/quote` (body: {productId, config}, response: mock PDF link or email simulation).
+  - **Admin Dev Toggle**: Hidden button (e.g., triple-click logo or ?dev=true query) opens `/admin-dev` modal/route; sliders to adjust multipliers (e.g., +10% inflation), apply button broadcasts via Context `dispatch({type: 'UPDATE_PRICING', payload})` – propagates instantly to all open products/carts with optimistic UI (fade price update).
+  - **Swatches (Mandatory)**: Horizontal chips (Tailwind ring on active); 4+ options (white/yellow/rose/platinum icons as SVGs); onClick: preload via IntersectionObserver, crossfade images (Framer `transition={{duration: 0.3}}`), update state/Context for persistence. ARIA: `aria-pressed`, role="radio".
+  - **Other Elements**: Expandable accordion (Headless UI) for description/SKU/cert (link to /public/docs/cert.pdf), shipping/returns tabs, related products (3 via simple tag match in `/lib/recommender.ts`).
+  - **Add-to-Cart**: Button with loading state; onSuccess: confetti + toast (sonner lib: "Added to Cart! ✨"), update cart Context (add item with variant).
+
+- **Cart & Checkout** (`/cart`, `/checkout`) – Client-side with SSR for initial load:
+  - **Cart**: Drawer (mobile) / full page (desktop); table/list with image/quantity ( +/- buttons, min 1 max 10, Zod validation), remove X, subtotal (Intl.NumberFormat INR), promo input (mock: "SAVE10" for 10% off, validate via regex). Persist via Context + localStorage sync on mount/unmount.
+  - **Checkout**: Multi-step form (react-hook-form wizard): Step1 Shipping (address fields, autocomplete stub), Step2 Payment (mock fields: card number via react-stripe-js placeholders, no real charge), Step3 Review. Submit to `/api/checkout` (simulate delay 2s, return {orderId: uuid(), status: 'confirmed'}); redirect to `/order/[id]` confirmation with printable receipt.
+
+- **About Page** (`/about`) – SSG:
+  - Timeline: Vertical stepper (Framer variants on scroll) with 5+ milestones (e.g., "2020: Founded on Ethical Principles" with image/year badge).
+  - Founder Story: Rich text with bio photo, quote pull.
+  - Sustainability: Deep dive with stats (e.g., "Zero Waste Process" infographic via SVG), embedded cert images (lazy Next/Image), links to external IGI/GIA mocks.
+
+- **Contact Page** (`/contact`) – SSR:
+  - Form: Multi-field (name/email/message/subject) via React Hook Form + Zod schema; submit to `/api/contact` (mock email via nodemailer stub or console.log).
+  - Embed: Google Maps iframe (styled, lazy); WhatsApp link (`https://wa.me/91...`); live chat stub (Tidio-like floating button opening mock drawer).
+
+- **Admin & Dev Utilities** (`/admin-dev` – guarded by process.env.NODE_ENV === 'development' or ?dev=true):
+  - Dashboard: Tabs for Pricing (multiplier forms, save to /data/price-config.json via fs.writeFile in API), Features (toggles: infinite vs pagination), Seed (run `scripts/seed-products.ts` to generate/populate products.json with Faker.js for realism: names like "Solitaire Oval 1.2ct", random prices ±20%, availability bool).
+  - Export: Button to download CSV (papaparse lib: headers id,name,price,images[]).
+
+**Data & Assets Specifications**:
+- **Products Data**: `/data/products.json` – Array of 25+ objects (TypeScript interface: `{ id: string; name: string; slug: string; sku: string; basePrice: number; carat: number; metals: string[]; shapes: string[]; images: Record<'white'|'yellow'|'rose'|'platinum', string>; description: string; tags: string[]; availability: boolean; certUrl?: string; }`). Categories balanced: 8 rings, 6 earrings, 5 pendants, 6 bracelets. Images: 4 variants each, sourced from Unsplash (e.g., "https://images.unsplash.com/photo-...&w=800&q=80") or /public/images/product-{id}-{variant}.jpg (include 10+ placeholders optimized <100KB).
+- **Price Config**: `/data/price-config.json` – `{ basePrice: 50000; caratMultiplier: 20000; metalPremiums: {...}; customizationFees: {engraving: 2000, extraGem: 5000}; }`. API: GET/POST `/api/price-config` with JSON body, rate-limited (upstash-ratelimit or simple in-memory).
+- **Assets Folder**: `/public/images/` (products, avatars, icons); `/public/models/` (2-3 glTF jewelry models ~50KB); `/public/docs/` (sample cert.pdf via placeholder PDF.js embed).
+
+**Price Calculator Deep Dive (Enhanced Precision)**:
+- **Logic Module**: `/lib/priceCalculator.ts` – Exported functions: `calculatePrice(config: CalculatePriceInput): number` (with rounding, error if carat<0.25), `updateGlobalMultipliers(payload: Partial<PriceConfig>) => void` (via Context dispatch).
+- **UI Integration**: Custom hook `usePriceCalculator` (integrates Query for config fetch); modal with Formik-like fields, live preview badge ("From ₹{price}"), breakdown table (base/carat/metal/fees).
+- **Global Propagation**: On admin update, use `queryClient.invalidateQueries({ queryKey: ['products'] })` + Context setter; add undo toast (5s revert).
+- **Edge Cases**: Test zero carat (error modal), negative premiums (clamp to 0), large numbers (format with abbreviations, e.g., ₹1.2L).
+
+**Performance, SEO & Accessibility Mandates**:
+- **Perf Optimizations**: Code-split routes (`dynamic` imports), prefetch featured products, GZIP/Brotli via Vercel. Include `/scripts/analyze-bundle.ts` for post-build report. Budget: performance-budget.md with thresholds (e.g., "Images >200KB flagged").
+- **SEO**: `next/head` for dynamic metas (title: `${product.name} | Nivara Luxe`, description from props); Open Graph/Twitter Cards images (1200x630 via Next/Image); JSON-LD via `react-schemaorg` for Product/BreadcrumbList on collection/product.
+- **A11Y**: `eslint-plugin-jsx-a11y@6.8`; color tokens with contrast checks (tailwindcss-contrast plugin); high-contrast mode (CSS prefers-contrast media query, swap to --high-contrast-gold: #B8860B). Repo: `/a11y-checklist.md` (markdown table: criterion | status | evidence, e.g., "1.1.1 Non-text Content | Compliant | Alt texts on all images").
+- **Keyboard Nav**: Custom focus-visible styles, skip-to-content link, roving tabIndex for carousels/filters.
+
+**Expanded Testing Suite** (Run via `npm test`; coverage to /coverage):
+- **Unit (Vitest)**: 10+ tests – e.g., `test('calculatePrice handles edge cases', () => { expect(calculatePrice({carat:0})).toThrow(); });`, swatch swap (render, fireEvent.click, assert img.src), cart add/remove persistence.
+- **Component (RTL)**: `render(<ProductCard />); fireEvent.click(swatch); expect(screen.getByAltText('Yellow variant')).toBeInTheDocument();`.
+- **E2E (Playwright)**: 5+ scenarios – e.g., `test('full purchase flow', async ({page}) => { await page.goto('/'); await page.click('Explore'); await page.fill('search', 'ring'); await page.click(firstProduct); await page.click(swatch); await expect(page.locator('.price')).toHaveText('₹65,000'); await page.click('Add to Cart'); await page.goto('/cart'); await page.click('Checkout'); await expect(page.url()).toContain('/order/'); });`, admin price update verification, responsive mobile cart drawer.
+- **Storybook**: 20+ stories (controls for props like variants, interactions addon for hovers).
+
+**Security, Ops & Monitoring**:
+- **Security**: `next-secure-headers` for CSP (script-src 'self' nextjs; img-src 'self' data: https:), HSTS, XFO. API routes: Zod.parse(req.body), rate-limit 100/min/IP (via headers['x-forwarded-for']). Session mock with httpOnly cookies.
+- **Error Handling**: Global ErrorBoundary (react-error-boundary with FallbackUI + log to Sentry stub), 500 page with retry. Offline detection via `navigator.onLine` + toast.
+- **Monitoring**: Web Vitals reporting to GA4; include `/utils/telemetry.ts` for custom events (e.g., 'price_update', 'add_to_cart').
+- **Internationalization Stub**: next-intl for i18n (en-IN default; add /messages/en.json with INR symbols); currency toggle button (mock rates: 1 USD = 83 INR).
+
+**Optional High-Impact Extras** (Implement 3+ for bonus; flag in README):
+- **ML Recommender**: `/lib/recommender.ts` – TF-IDF vectors on tags (via natural lib or simple cosine sim); on product page: "Similar Gems" grid of 3 (query products.filter by similarity >0.6).
+- **AR Try-On**: Enhanced model-viewer with camera access (getUserMedia fallback), pose detection stub (MediaPipe via CDN).
+- **Multi-Currency**: Context toggle (INR/USD/EUR); fetch mock rates from `/api/rates` (static JSON), format via Intl; persist pref in localStorage.
+- **Voice Search**: Web Speech API integration on search bar (mobile-first, fallback text).
+- **Social Proof**: Dynamic badges (e.g., "50+ Sold This Week" via simple counter).
+
+**Final Deliverables & Verification**:
+- **Codebase Structure**: 
+  ```
+  / (root)
+  ├── /app (pages/api)
+  ├── /src
+  │   ├── /components (ui/, ProductCard.tsx, etc.)
+  │   ├── /lib (utils, hooks, priceCalculator.ts)
+  │   ├── /data (products.json, price-config.json)
+  │   └── /types (index.ts for interfaces)
+  ├── /public (images/, models/, docs/, manifest.json)
+  ├── /tests (e2e/, unit/, __mocks__)
+  ├── /stories (ProductCard.stories.tsx)
+  ├── /scripts (seed-products.ts)
+  ├── .github/workflows/ci-cd.yml
+  ├── next.config.js, tailwind.config.js, tsconfig.json, etc.
+  └── README.md (sections: Quickstart `npm i && npm run dev` | Architecture | Pricing Explainer | Tests `npm run test:unit && npm run test:e2e` | Deploy `vercel --prod` | Screenshots)
+  ```
+- **Deployment**: Auto-provision Vercel project in CI; provide env vars (e.g., NEXT_PUBLIC_GA_ID=mock). If no live link, include Replit/StackBlitz import instructions.
+- **Acceptance Checklist** (in demo-report.md): [ ] 25+ products load infinitely; [ ] Price change in admin updates 3+ pages; [ ] AR spin/try-on renders; [ ] E2E passes on CI; [ ] Lighthouse mobile perf 95+; [ ] Keyboard completes checkout; [ ] Bundle <1MB gzipped.
+- **Generator Instructions**: Output zipped tarball (or GitHub zip download link) + live URL. Use best practices for modularity; ensure zero console errors on load. Make it sparkle – literally, with gem-like glows on hovers!

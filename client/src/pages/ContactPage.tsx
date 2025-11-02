@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Phone, MapPin, MessageCircle } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -40,18 +41,35 @@ export default function ContactPage() {
     console.log('Contact form submitted:', formData);
   };
 
+  // Hero image from Unsplash - luxury jewelry/contact theme
+  const heroImage = "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=1920&q=80&auto=format&fit=crop";
+
   return (
     <div className="min-h-screen">
-      <div className="border-b bg-card">
-        <div className="container px-4 md:px-8 py-16 md:py-20">
-          <div className="max-w-3xl mx-auto text-center">
+      {/* Hero Section with Image */}
+      <div className="relative min-h-[400px] md:min-h-[500px] flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/50 z-10" />
+          <img
+            src={heroImage}
+            alt="Contact us"
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="relative z-20 container px-4 md:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-white"
+          >
             <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6">
               Get in Touch
             </h1>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-lg md:text-xl max-w-2xl mx-auto text-white/90">
               Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
             </p>
-          </div>
+          </motion.div>
         </div>
       </div>
 

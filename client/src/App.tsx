@@ -9,9 +9,11 @@ import HomePage from "@/pages/HomePage";
 import CollectionPage from "@/pages/CollectionPage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
 import CartPage from "@/pages/CartPage";
-import AboutPage from "@/pages/AboutPage";
+import FavoritesPage from "@/pages/FavoritesPage";
 import ContactPage from "@/pages/ContactPage";
 import NotFound from "@/pages/not-found";
+import { CartProvider } from "@/contexts/CartContext";
+import { FavoritesProvider } from "@/contexts/FavoritesContext";
 
 function Router() {
   return (
@@ -20,7 +22,7 @@ function Router() {
       <Route path="/collections" component={CollectionPage} />
       <Route path="/product/:id" component={ProductDetailPage} />
       <Route path="/cart" component={CartPage} />
-      <Route path="/about" component={AboutPage} />
+      <Route path="/favorites" component={FavoritesPage} />
       <Route path="/contact" component={ContactPage} />
       <Route component={NotFound} />
     </Switch>
@@ -30,16 +32,20 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <div className="flex flex-col min-h-screen">
-          <Header />
-          <main className="flex-1">
-            <Router />
-          </main>
-          <Footer />
-        </div>
-        <Toaster />
-      </TooltipProvider>
+      <CartProvider>
+        <FavoritesProvider>
+          <TooltipProvider>
+            <div className="flex flex-col min-h-screen">
+              <Header />
+              <main className="flex-1">
+                <Router />
+              </main>
+              <Footer />
+            </div>
+            <Toaster />
+          </TooltipProvider>
+        </FavoritesProvider>
+      </CartProvider>
     </QueryClientProvider>
   );
 }

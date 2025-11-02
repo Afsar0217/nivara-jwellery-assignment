@@ -11,31 +11,25 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles } from "lucide-react";
+import { usePriceConfig } from "@/hooks/usePriceConfig";
+import { calculateCustomPrice } from "@/lib/priceCalculator";
 
 export default function PriceCalculator() {
   const [carat, setCarat] = useState(1.0);
-  const [metal, setMetal] = useState("white-gold");
+  const [metal, setMetal] = useState<"white-gold" | "yellow-gold" | "rose-gold" | "platinum">("white-gold");
   const [engraving, setEngraving] = useState(false);
   const [giftBox, setGiftBox] = useState(false);
 
-  // Price calculation logic
-  const basePrice = 50000;
-  const caratMultiplier = 45000;
-  const metalPremiums: Record<string, number> = {
-    "white-gold": 0,
-    "yellow-gold": 2000,
-    "rose-gold": 2500,
-    "platinum": 15000,
-  };
-  const engravingFee = 3000;
-  const giftBoxFee = 2500;
+  // Fetch price config from API
+  const { data: priceConfig, isLoading } = usePriceConfig();
 
   const calculateTotal = () => {
-    let total = basePrice + carat * caratMultiplier + metalPremiums[metal];
-    if (engraving) total += engravingFee;
-    if (giftBox) total += giftBoxFee;
-    return Math.round(total / 10) * 10;
+    return calculateCustomPrice(priceConfig, carat, metal, engraving, giftBox);
   };
+
+  // Fallback values for display when loading
+  const engravingFee = priceConfig?.customizationFees.engraving || 3000;
+  const giftBoxFee = priceConfig?.customizationFees.giftBox || 2500;
 
   return (
     <div className="bg-card border border-card-border rounded-lg p-6 space-y-6">
@@ -105,15 +99,23 @@ export default function PriceCalculator() {
       </div>
 
       <div className="border-t pt-4">
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-lg font-semibold">Estimated Total</span>
-          <span className="text-2xl font-bold text-primary font-serif" data-testid="text-total-price">
-            ₹{calculateTotal().toLocaleString('en-IN')}
-          </span>
-        </div>
-        <Button className="w-full" size="lg" data-testid="button-add-to-cart">
-          Add to Cart
-        </Button>
+        {isLoading ? (
+          <div className="text-center py-4 text-muted-foreground">
+            Loading pricing...
+          </div>
+        ) : (
+          <>
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-lg font-semibold">Estimated Total</span>
+              <span className="text-2xl font-bold text-primary font-serif" data-testid="text-total-price">
+                ₹{calculateTotal().toLocaleString('en-IN')}
+              </span>
+            </div>
+            <Button className="w-full" size="lg" data-testid="button-add-to-cart">
+              Add to Cart
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRoute } from "wouter";
 import { Swiper, SwiperSlide } from 'swiper/react';
+import type { Swiper as SwiperType } from 'swiper';
 import { Thumbs, Zoom } from 'swiper/modules';
 import { Button } from "@/components/ui/button";
 import PriceCalculator from "@/components/PriceCalculator";
@@ -17,26 +19,91 @@ import { motion } from "framer-motion";
 import 'swiper/css';
 import 'swiper/css/thumbs';
 import 'swiper/css/zoom';
-import whiteGoldRing from '@assets/generated_images/White_gold_solitaire_ring_be4bc106.png';
-import roseGoldRing from '@assets/generated_images/Rose_gold_oval_halo_ring_7c55c6f4.png';
+import { getProductById } from "@/data/products";
+import { usePriceConfig } from "@/hooks/usePriceConfig";
+import { calculateProductPrice } from "@/lib/priceCalculator";
+import { useCart } from "@/contexts/CartContext";
+import { useFavorites } from "@/contexts/FavoritesContext";
 
 export default function ProductDetailPage() {
-  const [selectedMetal, setSelectedMetal] = useState('White Gold');
+  const [, params] = useRoute('/product/:id');
+  const [selectedMetal, setSelectedMetal] = useState<'White Gold' | 'Yellow Gold' | 'Rose Gold' | 'Platinum'>('White Gold');
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
+  const swiperRef = useRef<SwiperType | null>(null);
   const { toast } = useToast();
 
-  const metals = ['White Gold', 'Yellow Gold', 'Rose Gold', 'Platinum'];
-  const images = [whiteGoldRing, roseGoldRing, whiteGoldRing, roseGoldRing];
+  // Fetch price config for dynamic pricing
+  const { data: priceConfig } = usePriceConfig();
+  const { addToCart } = useCart();
+  const { toggleFavorite, isFavorite } = useFavorites();
 
-  const handleAddToCart = () => {
+  const productId = params?.id || '1';
+  const product = getProductById(productId);
+
+  // Default to first product if not found
+  const displayProduct = product || getProductById('1')!;
+
+  // Calculate dynamic price based on price config and selected metal
+  const calculatedPrice = calculateProductPrice(displayProduct.basePrice, priceConfig, selectedMetal);
+  
+  const favorited = isFavorite(productId);
+  
+  const handleAddToCartClick = () => {
+    addToCart(productId, selectedMetal);
     setShowConfetti(true);
     toast({
       title: "Added to Cart! ✨",
       description: "Your item has been added to the cart.",
     });
     setTimeout(() => setShowConfetti(false), 3000);
-    console.log('Added to cart');
   };
+  
+  const handleFavoriteClick = () => {
+    toggleFavorite(productId);
+  };
+
+  // Use product's available metals, fallback to all if not specified
+  const availableMetals = displayProduct.metals || ['White Gold', 'Yellow Gold', 'Rose Gold', 'Platinum'];
+  
+  // Reset metal selection when product changes or ensure it's valid
+  useEffect(() => {
+    if (!availableMetals.includes(selectedMetal as any)) {
+      setSelectedMetal(availableMetals[0] as 'White Gold' | 'Yellow Gold' | 'Rose Gold' | 'Platinum');
+    }
+  }, [productId, availableMetals]);
+  
+  // Get images for the selected metal - primary image is the selected metal, then show other variants
+  const currentMetalImage = displayProduct.images[selectedMetal];
+  const otherMetals = availableMetals.filter(m => m !== selectedMetal);
+  const images = [
+    currentMetalImage, // Primary: selected metal
+    otherMetals[0] ? displayProduct.images[otherMetals[0] as keyof typeof displayProduct.images] : currentMetalImage, // Additional view
+    otherMetals[1] ? displayProduct.images[otherMetals[1] as keyof typeof displayProduct.images] : currentMetalImage, // Additional view
+    otherMetals[2] ? displayProduct.images[otherMetals[2] as keyof typeof displayProduct.images] : currentMetalImage, // Additional view
+  ];
+
+  // Reset selected image index when metal changes
+  useEffect(() => {
+    setSelectedImageIndex(0);
+    if (swiperRef.current) {
+      swiperRef.current.slideTo(0);
+    }
+  }, [selectedMetal, productId]);
+
+  // Handle thumbnail click
+  const handleThumbnailClick = (index: number) => {
+    setSelectedImageIndex(index);
+    if (swiperRef.current) {
+      swiperRef.current.slideTo(index);
+    }
+  };
+
+  // Handle swiper slide change
+  const handleSlideChange = (swiper: SwiperType) => {
+    setSelectedImageIndex(swiper.activeIndex);
+  };
+
 
   return (
     <div className="min-h-screen py-8">
@@ -66,14 +133,20 @@ export default function ProductDetailPage() {
               modules={[Thumbs, Zoom]}
               zoom={true}
               className="rounded-lg overflow-hidden aspect-square bg-muted"
+              key={selectedMetal} // Force re-render when metal changes
+              onSwiper={(swiper) => {
+                swiperRef.current = swiper;
+              }}
+              onSlideChange={handleSlideChange}
+              initialSlide={0}
             >
               {images.map((image, index) => (
                 <SwiperSlide key={index}>
                   <div className="swiper-zoom-container">
                     <img
                       src={image}
-                      alt={`Product view ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      alt={`${displayProduct.name} in ${selectedMetal} - view ${index + 1}`}
+                      className="w-full h-full object-cover transition-opacity duration-300"
                       data-testid={`img-product-${index}`}
                     />
                   </div>
@@ -85,13 +158,20 @@ export default function ProductDetailPage() {
               {images.slice(0, 4).map((image, index) => (
                 <button
                   key={index}
-                  className="aspect-square rounded-lg overflow-hidden border-2 border-border hover:border-primary transition-colors"
+                  onClick={() => handleThumbnailClick(index)}
+                  className={`aspect-square rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+                    selectedImageIndex === index
+                      ? 'border-primary ring-2 ring-primary/20 scale-[1.02]'
+                      : 'border-border hover:border-primary/50 hover:scale-[1.01]'
+                  }`}
                   data-testid={`button-thumbnail-${index}`}
                 >
                   <img
                     src={image}
-                    alt={`Thumbnail ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    alt={`${displayProduct.name} thumbnail ${index + 1}`}
+                    className={`w-full h-full object-cover transition-opacity duration-200 ${
+                      selectedImageIndex === index ? 'opacity-100' : 'opacity-70 hover:opacity-90'
+                    }`}
                   />
                 </button>
               ))}
@@ -101,31 +181,29 @@ export default function ProductDetailPage() {
           <div className="space-y-6">
             <div>
               <p className="text-sm text-muted-foreground uppercase tracking-wide mb-2">
-                Engagement Rings
+                {displayProduct.category}
               </p>
               <h1 className="font-serif text-3xl md:text-4xl font-bold mb-4">
-                Classic Brilliant Solitaire
+                {displayProduct.name}
               </h1>
               <p className="text-3xl font-bold text-primary font-serif">
-                ₹125,000
+                ₹{calculatedPrice.toLocaleString('en-IN')}
               </p>
             </div>
 
             <p className="text-muted-foreground leading-relaxed">
-              A timeless classic featuring a brilliant-cut lab-grown diamond in a sophisticated 
-              four-prong setting. Ethically sourced and certified, this ring represents the 
-              perfect harmony of elegance and sustainability.
+              {displayProduct.description || 'Beautiful lab-grown diamond jewelry ethically sourced and certified. Each piece is handcrafted with precision and comes with a certificate of authenticity.'}
             </p>
 
             <div>
               <Label className="mb-3 block font-semibold">Select Metal</Label>
               <div className="flex gap-3 flex-wrap">
-                {metals.map((metal) => (
+                {availableMetals.map((metal) => (
                   <MetalSwatch
                     key={metal}
-                    metal={metal}
+                    metal={metal as 'White Gold' | 'Yellow Gold' | 'Rose Gold' | 'Platinum'}
                     active={selectedMetal === metal}
-                    onClick={() => setSelectedMetal(metal)}
+                    onClick={() => setSelectedMetal(metal as 'White Gold' | 'Yellow Gold' | 'Rose Gold' | 'Platinum')}
                   />
                 ))}
               </div>
@@ -138,7 +216,7 @@ export default function ProductDetailPage() {
               <Button
                 size="lg"
                 className="flex-1"
-                onClick={handleAddToCart}
+                onClick={handleAddToCartClick}
                 data-testid="button-add-to-cart-main"
               >
                 <ShoppingBag className="h-5 w-5 mr-2" />
@@ -148,9 +226,10 @@ export default function ProductDetailPage() {
                 size="lg"
                 variant="outline"
                 className="hover-elevate"
-                data-testid="button-add-to-wishlist"
+                onClick={handleFavoriteClick}
+                data-testid="button-add-to-favorites"
               >
-                <Heart className="h-5 w-5" />
+                <Heart className={`h-5 w-5 ${favorited ? 'fill-primary text-primary' : ''}`} />
               </Button>
             </div>
 

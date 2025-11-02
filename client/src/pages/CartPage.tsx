@@ -3,62 +3,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Minus, Plus, X } from "lucide-react";
 import { Link } from "wouter";
-import { useToast } from "@/hooks/use-toast";
-import whiteGoldRing from '@assets/generated_images/White_gold_solitaire_ring_be4bc106.png';
-import earrings from '@assets/generated_images/Yellow_gold_stud_earrings_d2d76b31.png';
-
-//todo: remove mock functionality
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-  metal: string;
-}
+import { useCart } from "@/contexts/CartContext";
 
 export default function CartPage() {
-  const [items, setItems] = useState<CartItem[]>([
-    { id: '1', name: 'Classic Brilliant Solitaire', price: 125000, quantity: 1, image: whiteGoldRing, metal: 'White Gold' },
-    { id: '3', name: 'Diamond Stud Earrings', price: 95000, quantity: 1, image: earrings, metal: 'Yellow Gold' },
-  ]);
+  const { getCartItemsWithDetails, updateQuantity, removeFromCart, getTotalPrice } = useCart();
   const [promoCode, setPromoCode] = useState('');
   const [discount, setDiscount] = useState(0);
-  const { toast } = useToast();
 
-  const updateQuantity = (id: string, delta: number) => {
-    setItems(items.map(item => 
-      item.id === id 
-        ? { ...item, quantity: Math.max(1, Math.min(10, item.quantity + delta)) }
-        : item
-    ));
+  const items = getCartItemsWithDetails();
+  const subtotal = getTotalPrice();
+
+  const updateItemQuantity = (productId: string, delta: number, metal?: 'White Gold' | 'Yellow Gold' | 'Rose Gold' | 'Platinum') => {
+    const item = items.find(item => item.product.id === productId && item.metal === metal);
+    if (item) {
+      updateQuantity(productId, item.quantity + delta, metal);
+    }
   };
 
-  const removeItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
-    toast({
-      title: "Item removed",
-      description: "The item has been removed from your cart.",
-    });
+  const removeItem = (productId: string, metal?: 'White Gold' | 'Yellow Gold' | 'Rose Gold' | 'Platinum') => {
+    removeFromCart(productId, metal);
   };
 
   const applyPromo = () => {
     if (promoCode.toUpperCase() === 'SAVE10') {
       setDiscount(0.10);
-      toast({
-        title: "Promo code applied!",
-        description: "You saved 10% on your order.",
-      });
     } else {
-      toast({
-        title: "Invalid code",
-        description: "Please check your promo code and try again.",
-        variant: "destructive",
-      });
+      setDiscount(0);
     }
   };
 
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discountAmount = subtotal * discount;
   const total = subtotal - discountAmount;
 
@@ -86,33 +59,35 @@ export default function CartPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-4">
             {items.map(item => (
-              <div key={item.id} className="bg-card border rounded-lg p-4 md:p-6">
+              <div key={`${item.product.id}-${item.metal || 'default'}`} className="bg-card border rounded-lg p-4 md:p-6">
                 <div className="flex gap-4 md:gap-6">
                   <div className="w-24 h-24 md:w-32 md:h-32 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                     <img
-                      src={item.image}
-                      alt={item.name}
+                      src={item.product.image}
+                      alt={item.product.name}
                       className="w-full h-full object-cover"
-                      data-testid={`img-cart-item-${item.id}`}
+                      data-testid={`img-cart-item-${item.product.id}`}
                     />
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between gap-4 mb-2">
                       <div>
-                        <h3 className="font-semibold text-lg mb-1" data-testid={`text-item-name-${item.id}`}>
-                          {item.name}
+                        <h3 className="font-semibold text-lg mb-1" data-testid={`text-item-name-${item.product.id}`}>
+                          {item.product.name}
                         </h3>
-                        <p className="text-sm text-muted-foreground">
-                          Metal: {item.metal}
-                        </p>
+                        {item.metal && (
+                          <p className="text-sm text-muted-foreground">
+                            Metal: {item.metal}
+                          </p>
+                        )}
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => removeItem(item.id)}
+                        onClick={() => removeItem(item.product.id, item.metal)}
                         className="flex-shrink-0"
-                        data-testid={`button-remove-${item.id}`}
+                        data-testid={`button-remove-${item.product.id}`}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -123,29 +98,29 @@ export default function CartPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => updateQuantity(item.id, -1)}
+                          onClick={() => updateItemQuantity(item.product.id, -1, item.metal)}
                           disabled={item.quantity <= 1}
                           className="h-8 w-8"
-                          data-testid={`button-decrease-${item.id}`}
+                          data-testid={`button-decrease-${item.product.id}`}
                         >
                           <Minus className="h-3 w-3" />
                         </Button>
-                        <span className="w-8 text-center font-medium" data-testid={`text-quantity-${item.id}`}>
+                        <span className="w-8 text-center font-medium" data-testid={`text-quantity-${item.product.id}`}>
                           {item.quantity}
                         </span>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => updateQuantity(item.id, 1)}
+                          onClick={() => updateItemQuantity(item.product.id, 1, item.metal)}
                           disabled={item.quantity >= 10}
                           className="h-8 w-8"
-                          data-testid={`button-increase-${item.id}`}
+                          data-testid={`button-increase-${item.product.id}`}
                         >
                           <Plus className="h-3 w-3" />
                         </Button>
                       </div>
 
-                      <p className="font-semibold text-lg" data-testid={`text-item-price-${item.id}`}>
+                      <p className="font-semibold text-lg" data-testid={`text-item-price-${item.product.id}`}>
                         ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                       </p>
                     </div>

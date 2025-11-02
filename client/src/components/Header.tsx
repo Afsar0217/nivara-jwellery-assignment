@@ -2,9 +2,16 @@ import { Link } from "wouter";
 import { Search, Heart, ShoppingBag, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useCart } from "@/contexts/CartContext";
+import { useFavorites } from "@/contexts/FavoritesContext";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { getTotalItems } = useCart();
+  const { getTotalFavorites } = useFavorites();
+  
+  const cartCount = getTotalItems();
+  const favoritesCount = getTotalFavorites();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -25,9 +32,6 @@ export default function Header() {
           <Link href="/collections" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-collections">
             Collections
           </Link>
-          <Link href="/about" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-about">
-            About
-          </Link>
           <Link href="/contact" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-contact">
             Contact
           </Link>
@@ -37,15 +41,26 @@ export default function Header() {
           <Button variant="ghost" size="icon" data-testid="button-search">
             <Search className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" data-testid="button-wishlist">
-            <Heart className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="relative" data-testid="button-cart">
-            <ShoppingBag className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
-              2
-            </span>
-          </Button>
+          <Link href="/favorites">
+            <Button variant="ghost" size="icon" className="relative" data-testid="button-favorites">
+              <Heart className="h-5 w-5" />
+              {favoritesCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
+                  {favoritesCount > 9 ? '9+' : favoritesCount}
+                </span>
+              )}
+            </Button>
+          </Link>
+          <Link href="/cart">
+            <Button variant="ghost" size="icon" className="relative" data-testid="button-cart">
+              <ShoppingBag className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
+              )}
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -54,9 +69,6 @@ export default function Header() {
           <nav className="flex flex-col p-4 gap-2">
             <Link href="/collections" className="py-2 text-sm font-medium" data-testid="link-mobile-collections">
               Collections
-            </Link>
-            <Link href="/about" className="py-2 text-sm font-medium" data-testid="link-mobile-about">
-              About
             </Link>
             <Link href="/contact" className="py-2 text-sm font-medium" data-testid="link-mobile-contact">
               Contact

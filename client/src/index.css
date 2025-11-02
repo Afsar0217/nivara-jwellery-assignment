@@ -320,4 +320,19 @@
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+
+  /* Swiper customizations */
+  .swiper-pagination-bullet {
+    background: hsl(var(--primary));
+    opacity: 0.3;
+  }
+
+  .swiper-pagination-bullet-active {
+    opacity: 1;
+  }
+
+  .swiper-button-next,
+  .swiper-button-prev {
+    color: hsl(var(--primary));
+  }
 }
